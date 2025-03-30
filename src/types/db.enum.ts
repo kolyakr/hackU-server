@@ -1,0 +1,6 @@
+export enum DB {
+  DB_USER_NAME = "DB_USER_NAME",
+  DB_PASSWORD = "DB_PASSWORD",
+  DB_URL = "DB_URL",
+  DB_NAME = "DB_NAME",
+}
