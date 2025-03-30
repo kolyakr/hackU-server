@@ -35,8 +35,8 @@ export const loginUserCtrl = async (req: Request, res: Response) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      token: session.accessToken,
     },
+    token: session.accessToken,
   });
 };
 
