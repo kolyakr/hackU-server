@@ -11,4 +11,4 @@ uploads/
 .DS_Store
 .idea
 /dist
-firebase.json
+serviceAccount.json
