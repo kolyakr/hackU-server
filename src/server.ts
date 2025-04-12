@@ -5,16 +5,22 @@ import cors from "cors";
 import { env } from "./utils/env";
 import { rootRouter } from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
+import fs from "fs";
 
 export const startServer = () => {
   const admin = require("firebase-admin");
 
+  const mode = env("NODE_ENV", "DEVELOPMENT");
+  const path =
+    mode == "PRODUCTION" ? "/etc/secrets/firebase.json" : "./firebase.json";
+
+  const firebaseConfig = JSON.parse(fs.readFileSync(path, "utf8"));
+
   admin.initializeApp({
-    credential: admin.credential.cert("/firebase.json"),
+    credential: admin.credential.cert(firebaseConfig),
   });
 
   const app = express();
-  const mode = env("NODE_ENV", "DEVELOPMENT");
 
   const allowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
 
