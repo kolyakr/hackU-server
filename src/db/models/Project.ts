@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, Types } from "mongoose";
 
 const projectSchema = new Schema({
   title: {
@@ -10,14 +10,26 @@ const projectSchema = new Schema({
     required: true,
   },
   userId: {
-    type: Schema.ObjectId,
+    type: Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  hackatonId: {
+    type: Types.ObjectId,
+    ref: "Hackaton",
     required: true,
   },
   createdAt: {
     type: Date,
-    default: Date.now(),
+    default: () => Date.now(),
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ["submitted", "pending", "rejected"],
+    default: "pending",
     required: true,
   },
 });
 
-export const Project = model("projects", projectSchema);
+export const Project = model("Project", projectSchema);

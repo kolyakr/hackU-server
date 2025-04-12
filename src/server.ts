@@ -7,6 +7,12 @@ import { rootRouter } from "./routes";
 import { errorHandler } from "./middlewares/errorHandler";
 
 export const startServer = () => {
+  const admin = require("firebase-admin");
+
+  admin.initializeApp({
+    credential: admin.credential.cert("/firebase.json"),
+  });
+
   const app = express();
   const mode = env("NODE_ENV", "DEVELOPMENT");
 

@@ -1,124 +1,123 @@
-import createHttpError from "http-errors";
+import admin from "firebase-admin";
 import { User } from "../db/models/User";
-import { RegisterUserType } from "../validators/auth/registerUserValidation";
-import { LoginUserType } from "../validators/auth/loginUserValidation";
-import { compare } from "bcrypt";
-import { Session } from "../db/models/Session";
-import crypto from "crypto";
-import { Response } from "express";
-import { ObjectId, Types } from "mongoose";
+import { generateJWT, verifyJWT } from "../utils/jwt";
 
-export const registerUser = async (data: RegisterUserType) => {
-  const isUserExist = await User.findOne({ email: data.email });
+interface UserProfile {
+  _id: string;
+  email: string;
+  fullName: string;
+  profilePicture?: string;
+}
 
-  if (isUserExist) {
-    throw createHttpError(401, "Email is in use");
+interface RegisterResponse {
+  message: string;
+  user: UserProfile;
+  token: string;
+}
+
+interface LoginResponse {
+  message: string;
+  user: UserProfile;
+  token: string;
+}
+
+interface DecodedToken {
+  userId: string;
+}
+
+export const registerUser = async (
+  email: string,
+  password: string,
+  fullName: string
+): Promise<RegisterResponse> => {
+  try {
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+    });
+
+    let user = await User.findOne({ firebaseUid: userRecord.uid });
+    if (!user) {
+      user = new User({
+        firebaseUid: userRecord.uid,
+        email: userRecord.email,
+        fullName,
+      });
+      await user.save();
+    }
+
+    const token = generateJWT(user._id);
+
+    return {
+      message: "User registered successfully",
+      user: {
+        _id: user._id.toString(),
+        email: user.email,
+        fullName: user.fullName,
+      },
+      token,
+    };
+  } catch (error) {
+    throw new Error("Failed to register user");
+  }
+};
+
+export const loginUser = async (
+  email: string,
+  password: string
+): Promise<LoginResponse> => {
+  try {
+    const userRecord = await admin.auth().getUserByEmail(email);
+    const token = await admin.auth().createCustomToken(userRecord.uid);
+
+    const jwtToken = generateJWT(userRecord.uid);
+
+    const user = await User.findOne({ firebaseUid: userRecord.uid });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return {
+      message: "Login successful",
+      user: {
+        _id: user._id.toString(),
+        email: user.email,
+        fullName: user.fullName,
+      },
+      token: jwtToken,
+    };
+  } catch (error) {
+    throw new Error("Failed to login user");
+  }
+};
+
+export const getUserProfile = async (
+  token: string
+): Promise<{ user: UserProfile }> => {
+  if (!token) {
+    throw new Error("No token provided");
   }
 
-  return await User.create(data);
-};
+  try {
+    const decoded = verifyJWT(token) as DecodedToken;
+    const userId = decoded.userId;
 
-export const loginUser = async (data: LoginUserType) => {
-  const user = await User.findOne({
-    email: data.email,
-  });
+    const user = await User.findById(userId);
 
-  if (!user) {
-    throw createHttpError(401, "Unauthorized");
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return {
+      user: {
+        _id: user._id.toString(),
+        email: user.email,
+        fullName: user.fullName,
+        profilePicture: user.profilePicture,
+      },
+    };
+  } catch (error) {
+    throw new Error("Failed to fetch user profile");
   }
-
-  const isPasswordMatch = await compare(data.password, user.password);
-
-  if (!isPasswordMatch) {
-    throw createHttpError(401, "Unauthorized");
-  }
-
-  await Session.findOneAndDelete({
-    userId: user.id,
-  });
-
-  const sessionData = await createSessionData(user.id);
-  const session = await Session.create(sessionData);
-
-  return { user, session };
-};
-
-export const refreshSession = async (data: {
-  sessionToken: string;
-  sessionId: Types.ObjectId;
-}) => {
-  const oldSession = await Session.findOne({
-    _id: data.sessionId,
-  });
-
-  if (!oldSession) {
-    throw createHttpError(404, "Session not found");
-  }
-
-  const user = await User.findOne({
-    _id: oldSession.userId,
-  });
-
-  if (!user) {
-    throw createHttpError(404, "User not found or does not exist");
-  }
-
-  await Session.deleteOne({
-    _id: oldSession._id,
-  });
-
-  const sessionData = createSessionData(user.id);
-  const session = await Session.create(sessionData);
-
-  return { user, session };
-};
-
-export const clearCookies = (res: Response) => {
-  res.clearCookie("sessionId", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-  });
-  res.clearCookie("sessionToken", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-  });
-};
-
-export const setCookies = (
-  res: Response,
-  { id, refreshToken }: { id: Types.ObjectId; refreshToken: string }
-) => {
-  res.cookie("sessionId", id, {
-    expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-  });
-  res.cookie("sessionToken", refreshToken, {
-    expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-  });
-};
-
-export const createSessionData = (id: Types.ObjectId) => {
-  const accessToken = crypto.randomBytes(32).toString("hex");
-  const refreshToken = crypto.randomBytes(32).toString("hex");
-
-  return {
-    userId: id,
-    accessToken: accessToken,
-    refreshToken: refreshToken,
-    accessTokenValidUntill: new Date(Date.now() + 1000 * 60 * 15),
-    refreshTokenValidUntill: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
-  };
-};
-
-export const logoutUser = async (sessionId: Types.ObjectId) => {
-  return await Session.findOneAndDelete({
-    _id: sessionId,
-  });
 };

@@ -1,33 +1,42 @@
 import { model, Schema } from "mongoose";
-import { hash } from "bcrypt";
 
 const userSchema = new Schema({
-  name: {
+  firebaseUid: {
     type: String,
     required: true,
+    unique: true,
   },
   email: {
     type: String,
     required: true,
     unique: true,
   },
-  password: {
+  fullName: {
     type: String,
     required: true,
   },
-  points: {
-    type: Number,
-    default: 0,
+  profilePicture: {
+    type: String,
+    default: "/default-avatar.png",
+  },
+  role: {
+    type: String,
+    enum: ["user", "admin", "moderator"],
+    default: "user",
+  },
+  status: {
+    type: String,
+    enum: ["active", "inactive", "banned"],
+    default: "active",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
   },
 });
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    return next();
-  }
-
-  this.password = await hash(this.password, 10);
-  next();
-});
-
-export const User = model("users", userSchema);
+export const User = model("User", userSchema);

@@ -1,69 +1,41 @@
 import { Request, Response } from "express";
-import {
-  clearCookies,
-  loginUser,
-  logoutUser,
-  refreshSession,
-  registerUser,
-  setCookies,
-} from "../service/auth";
+import { getUserProfile, loginUser, registerUser } from "../service/auth";
+import { LoginResponse, RegisterResponse } from "../types/responses";
 
-export const registerUserCtrl = async (req: Request, res: Response) => {
-  const data = req.body;
+export const registerController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { email, password, fullName } = req.body;
 
-  const user = await registerUser(data);
-
-  res.json({
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-    },
-  });
+  const result: RegisterResponse = await registerUser(
+    email,
+    password,
+    fullName
+  );
+  res.status(201).json(result);
 };
 
-export const loginUserCtrl = async (req: Request, res: Response) => {
-  const data = req.body;
+export const loginController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { email, password } = req.body;
 
-  const { user, session } = await loginUser(data);
-
-  clearCookies(res);
-  setCookies(res, { id: session._id, refreshToken: session.refreshToken });
-
-  res.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    },
-    token: session.accessToken,
-  });
+  const result: LoginResponse = await loginUser(email, password);
+  res.status(200).json(result);
 };
 
-export const refreshSessionCtrl = async (req: Request, res: Response) => {
-  const sessionToken = req.cookies.sessionToken;
-  const sessionId = req.cookies.sessionId;
+export const profileController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const token: string | undefined = req.headers.authorization?.split(" ")[1];
 
-  const { session, user } = await refreshSession({ sessionId, sessionToken });
-
-  clearCookies(res);
-  setCookies(res, { id: session._id, refreshToken: session.refreshToken });
-
-  res.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      token: session.accessToken,
-    },
-  });
-};
-
-export const logoutUserCtrl = async (req: Request, res: Response) => {
-  const sessionId = req.cookies.sessionId;
-  await logoutUser(sessionId);
-
-  clearCookies(res);
-
-  res.json({});
+  if (!token) {
+    res.status(400).json({ error: "No token provided" });
+    return;
+  }
+  const result = await getUserProfile(token);
+  res.status(200).json(result);
 };
