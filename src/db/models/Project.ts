@@ -10,8 +10,7 @@ const projectSchema = new Schema({
     required: true,
   },
   userId: {
-    type: Types.ObjectId,
-    ref: "User",
+    type: String,
     required: true,
   },
   hackatonId: {

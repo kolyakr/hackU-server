@@ -16,7 +16,7 @@ export const getProjectsCtrl = async (req: Request, res: Response) => {
 export const createProjectCrtl = async (req: Request, res: Response) => {
   const data: CreateProjectType & { userId: Types.ObjectId } = {
     ...req.body,
-    userId: req.user?.id,
+    userId: req.token?.user_id,
   };
   const project = await createProject(data);
 
