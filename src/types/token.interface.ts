@@ -1,9 +1,11 @@
+import { Types } from "mongoose";
+
 export interface Token {
   name?: string;
   iss: string;
   aud: string;
   auth_time: number;
-  user_id: string;
+  user_id: Types.ObjectId;
   sub: string;
   iat: number;
   exp: number;

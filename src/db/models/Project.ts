@@ -1,14 +1,6 @@
 import { model, Schema, Types } from "mongoose";
 
 const projectSchema = new Schema({
-  title: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
   userId: {
     type: String,
     required: true,
@@ -25,8 +17,8 @@ const projectSchema = new Schema({
   },
   status: {
     type: String,
-    enum: ["submitted", "pending", "rejected"],
-    default: "pending",
+    enum: ["Подано", "Прийнято", "Відхилено"],
+    default: "Подано",
     required: true,
   },
 });
