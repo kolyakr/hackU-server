@@ -9,6 +9,7 @@ const projectSchema = new Schema({
     type: Types.ObjectId,
     ref: "Hackaton",
     required: true,
+    unique: true,
   },
   createdAt: {
     type: Date,

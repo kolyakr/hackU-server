@@ -4,12 +4,11 @@ import { CreateProjectType } from "../validators/projects/createProjectValidatio
 import { Types } from "mongoose";
 
 export const getProjectsCtrl = async (req: Request, res: Response) => {
-  const projects = await getProjects();
+  const userId = req.token.user_id;
+  const projects = await getProjects(userId);
 
   res.json({
-    projects: {
-      ...projects,
-    },
+    projects,
   });
 };
 
@@ -19,6 +18,8 @@ export const createProjectCrtl = async (req: Request, res: Response) => {
     userId: req.token.user_id,
   };
   const project = await createProject(data);
+
+  console.log("PROJECT: ", project);
 
   res.json({
     project: project,

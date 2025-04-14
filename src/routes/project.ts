@@ -7,7 +7,7 @@ import { authorize } from "../middlewares/authorize";
 
 export const projectsRouter = Router();
 
-projectsRouter.get("/", ctrlWrapper(getProjectsCtrl));
+projectsRouter.get("/", authorize, ctrlWrapper(getProjectsCtrl));
 
 projectsRouter.post(
   "/",
