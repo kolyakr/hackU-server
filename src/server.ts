@@ -11,7 +11,13 @@ export const startServer = () => {
 
   const app = express();
 
-  const allowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
+  const allowedOrigins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://hack-u-client-rho.vercel.app",
+    "https://hack-u-client-git-master-kolyas-projects-0732d788.vercel.app",
+    "https://hack-u-client-48ar45zi3-kolyas-projects-0732d788.vercel.app",
+  ];
 
   app.use(
     cors({
